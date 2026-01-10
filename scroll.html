@@ -31,7 +31,14 @@
 <br><br>
 
 <button onclick="startTask()">Start Task</button>
-<button onclick="endTask()">Finish Task</button>
+
+<button onclick="finishTask()">Finish Task</button>
+
+<script>
+function finishTask() {
+  window.open("https://forms.gle/YOUR_UMUX_LINK", "_blank");
+}
+</script>
 
 <p id="status"></p>
 
@@ -114,3 +121,4 @@ map.on("move", function () {
 
 </body>
 </html>
+
