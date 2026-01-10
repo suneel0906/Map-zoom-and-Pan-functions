@@ -1,0 +1,117 @@
+<h3>Interaction Type: Gesture-based Zoom & Pan</h3>
+
+<p><b>Task 1:</b> Locate Chemnitz Hauptbahnhof.</p>
+<p><b>Task 2:</b> Zoom to the city center.</p>
+<p><b>Task 3:</b> Identify two nearby points of interest.</p>
+
+<p>
+  When you finish all tasks, click <b>Finish Task</b> and complete the questionnaire.
+</p>
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Gesture Zoom Prototype</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <style>
+    #map { height: 100vh; }
+  </style>
+</head>
+<body>
+<h3>Map Navigation Task</h3>
+
+<label>Participant ID:</label>
+<input type="text" id="pid" placeholder="P01">
+
+<br><br>
+
+<button onclick="startTask()">Start Task</button>
+<button onclick="endTask()">Finish Task</button>
+
+<p id="status"></p>
+
+<hr>
+
+<div id="map"></div>
+
+<script>
+    let startTime;
+let endTime;
+let zoomCount = 0;
+let panCount = 0;
+
+const interactionType = "GESTURE";
+
+// change to "SCROLL" or "GESTURE" in other versions
+
+  var map = L.map('map', {
+    zoomControl: false,
+    scrollWheelZoom: false,
+    touchZoom: true,
+    dragging: true
+  }).setView([50.83, 12.92], 13);
+  function startTask() {
+  startTime = new Date();
+  zoomCount = 0;
+  panCount = 0;
+
+  document.getElementById("status").innerText =
+    "Task started. Please complete the task.";
+}
+
+function endTask() {
+  endTime = new Date();
+
+  const timeTaken = (endTime - startTime) / 1000;
+  const participantId = document.getElementById("pid").value;
+
+  const result = {
+    participant: participantId,
+    interaction: interactionType,
+    time_seconds: timeTaken,
+    zooms: zoomCount,
+    pans: panCount
+  };
+
+  console.log(result);
+  downloadCSV(result);
+
+  document.getElementById("status").innerText =
+    "Task completed. Data saved.";
+}
+map.on("zoom", function () {
+  zoomCount++;
+});
+
+map.on("move", function () {
+  panCount++;
+});
+
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
+    .addTo(map);
+    
+
+    function downloadCSV(data) {
+  const csv = 
+    "participant,interaction,time_seconds,zooms,pans\n" +
+    `${data.participant},${data.interaction},${data.time_seconds},${data.zooms},${data.pans}`;
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "usability_results.csv";
+  a.click();
+}
+
+</script>
+
+</body>
+</html>
