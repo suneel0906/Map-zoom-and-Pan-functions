@@ -45,6 +45,7 @@ function finishTask() {
 <hr>
 
 <div id="map"></div>
+  <button onclick="goToUMUX()">Finish Task & Go to UMUX</button>
 
 <script>
     let startTime;
@@ -115,9 +116,23 @@ map.on("move", function () {
   a.click();
 }
 </script>
+<script>
+function goToUMUX() {
+  alert(
+    "You have completed the tasks.\n" +
+    "Please complete the UMUX questionnaire based on this interaction."
+  );
+
+  window.open(
+    "PASTE_YOUR_UMUX_SURVEY_LINK_HERE",
+    "_blank"
+  );
+}
+</script>
 
 </body>
 </html>
+
 
 
 
