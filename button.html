@@ -9,7 +9,7 @@
 </p>
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <title>Button Zoom Prototype</title>
   <meta charset="utf-8" />
@@ -20,113 +20,108 @@
 
   <style>
     #map { height: 100vh; }
+    #panel{
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 9999;
+      background: white;
+      padding: 12px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.15);
+      max-width: 360px;
+      font-family: Arial, sans-serif;
+      line-height: 1.4;
+    }
+    #panel button { margin-right: 8px; margin-top: 8px; }
+    #status { margin-top: 8px; font-weight: bold; }
   </style>
 </head>
+
 <body>
-<h3>Map Navigation Task</h3>
 
-<label>Participant ID:</label>
-<input type="text" id="pid" placeholder="P01">
+<div id="panel">
+  <h3 style="margin:0 0 8px 0;">Interaction: Button-based Zoom & Pan</h3>
 
-<br><br>
+  <p style="margin:0 0 6px 0;"><b>Task 1:</b> Locate Chemnitz Hauptbahnhof.</p>
+  <p style="margin:0 0 6px 0;"><b>Task 2:</b> Zoom to the city center.</p>
+  <p style="margin:0 0 10px 0;"><b>Task 3:</b> Identify two nearby points of interest.</p>
 
-<button onclick="startTask()">Start Task</button>
-<button onclick="finishTask()">Finish Task</button>
+  <label><b>Participant ID:</b></label>
+  <input type="text" id="pid" placeholder="P01" style="width:90px;" />
 
-<script>
-function finishTask() {
-  window.location.href("https://bildungsportal.sachsen.de/umfragen/limesurvey/index.php/815877?lang=en");
-}
-</script>
+  <div>
+    <button id="startBtn" type="button">Start Task</button>
+    <button id="finishBtn" type="button">Finish Task</button>
+  </div>
 
-
-<p id="status"></p>
-
-<hr>
+  <div id="status"></div>
+</div>
 
 <div id="map"></div>
-  <button onclick="goToUMUX()">Finish Task & Go to UMUX</button>
 
 <script>
-    let startTime;
-let endTime;
-let zoomCount = 0;
-let panCount = 0;
+  // ✅ Put your LimeSurvey link here:
+  const SURVEY_URL = "https://bildungsportal.sachsen.de/umfragen/limesurvey/index.php/815877?lang=en";
 
-const interactionType = "BUTTON"; 
-// change to "SCROLL" or "GESTURE" in other versions
+  // Logging variables
+  let startTime = null;
+  let zoomCount = 0;
+  let panCount = 0;
 
-  var map = L.map('map', {
+  const interactionType = "BUTTON";
+
+  // Leaflet map settings for BUTTON condition
+  const map = L.map('map', {
     zoomControl: true,
     scrollWheelZoom: false,
     touchZoom: false,
     dragging: true
   }).setView([50.83, 12.92], 13);
-  function startTask() {
-  startTime = new Date();
-  zoomCount = 0;
-  panCount = 0;
-
-  document.getElementById("status").innerText =
-    "Task started. Please complete the task.";
-}
-
-function endTask() {
-  endTime = new Date();
-
-  const timeTaken = (endTime - startTime) / 1000;
-  const participantId = document.getElementById("pid").value;
-
-  const result = {
-    participant: participantId,
-    interaction: interactionType,
-    time_seconds: timeTaken,
-    zooms: zoomCount,
-    pans: panCount
-  };
-
-  console.log(result);
-  downloadCSV(result);
-
-  document.getElementById("status").innerText =
-    "Task completed. Data saved.";
-}
-map.on("zoom", function () {
-  zoomCount++;
-});
-
-map.on("move", function () {
-  panCount++;
-});
-
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
     .addTo(map);
-    function downloadCSV(data) {
-  const csv = 
-    "participant,interaction,time_seconds,zooms,pans\n" +
-    `${data.participant},${data.interaction},${data.time_seconds},${data.zooms},${data.pans}`;
 
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
+  // Count interactions
+  map.on("zoom", () => zoomCount++);
+  map.on("move", () => panCount++);
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "usability_results.csv";
-  a.click();
-}
-</script>
-<script>
-function goToUMUX() {
-  alert(
-    "You have completed the tasks.\n" +
-    "Please complete the UMUX questionnaire based on this interaction."
-  );
+  // Start task
+  document.getElementById("startBtn").addEventListener("click", () => {
+    startTime = new Date();
+    zoomCount = 0;
+    panCount = 0;
+    document.getElementById("status").innerText = "Task started. Please complete the tasks.";
+  });
 
-  window.open(
-   "https://bildungsportal.sachsen.de/umfragen/limesurvey/index.php/815877?lang=en"
-  );
-}
+  // Finish task: compute + download CSV + go to survey
+  document.getElementById("finishBtn").addEventListener("click", () => {
+    if (!startTime) {
+      alert("Please click Start Task first.");
+      return;
+    }
+
+    const endTime = new Date();
+    const timeTaken = (endTime - startTime) / 1000;
+
+    const participantId = document.getElementById("pid").value.trim() || "NA";
+
+    const csv =
+      "participant,interaction,time_seconds,zooms,pans\n" +
+      `${participantId},${interactionType},${timeTaken},${zoomCount},${panCount}\n`;
+
+    // Download CSV
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `usability_${participantId}_${interactionType}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    // Redirect to UMUX survey (same tab = most reliable)
+    window.location.href = SURVEY_URL;
+  });
 </script>
 
 </body>
