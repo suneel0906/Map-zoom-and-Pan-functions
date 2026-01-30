@@ -1,38 +1,140 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Map Interaction Usability Study</title>
+  <title>Gesture Zoom Prototype</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
- <style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <style>
     body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
+      font-family: "Times New Roman", serif;
+      margin: 20px;
+      line-height: 1.4;
+    }
+
+    #map {
+      height: calc(100vh - 320px);
+      border: 1px solid #ccc;
+      margin-top: 15px;
+      touch-action: none; /* helps consistent gesture handling */
+    }
+
+    .controls { margin-top: 10px; }
+
+    input {
+      padding: 6px;
+      font-size: 16px;
+      width: 220px;
+    }
+
+    button {
+      padding: 6px 14px;
+      font-size: 16px;
+      margin-right: 8px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+
+    #status {
+      margin-top: 10px;
+      font-weight: bold;
     }
   </style>
 </head>
 
 <body>
 
-<h2>Map Interaction Usability Study</h2>
+  <h2>Interaction Type: Gesture-based Zoom &amp; Pan</h2>
 
-<p>
-Thank you for participating. You will complete map navigation tasks using
-three different interaction methods.
-</p>
+  <p><b>Task 1:</b> Locate Chemnitz Hauptbahnhof.</p>
+  <p><b>Task 2:</b> Zoom to the city center.</p>
+  <p><b>Task 3:</b> Identify two nearby points of interest.</p>
 
-<p>
-<b>After finishing each interaction, please complete the usability questionnaire.</b>
-</p>
+  <p>
+    When you finish all tasks, click <b>Finish Task</b> and complete the questionnaire.
+  </p>
 
-<h3>Interaction Order</h3>
+  <h3>Map Navigation Task</h3>
 
-<ol>
-  <li><a href="button.html">Button-based Interaction</a></li>
-  <li><a href="scroll.html">Scroll-based Interaction</a></li>
-  <li><a href="gesture.html">Gesture-based Interaction</a></li>
-</ol>
+  <label><b>Participant ID:</b></label>
+  <input type="text" id="pid" placeholder="P01" />
 
+  <div class="controls">
+    <button id="startBtn" type="button">Start Task</button>
+    <button id="finishBtn" type="button">Finish Task</button>
+  </div>
+
+  <div id="status"></div>
+
+  <div id="map"></div>
+
+  <script>
+    // ✅ LimeSurvey UMUX link
+    const SURVEY_URL =
+      "https://bildungsportal.sachsen.de/umfragen/limesurvey/index.php/815877?lang=en";
+
+    // Logging variables
+    let startTime = null;
+    let zoomCount = 0;
+    let panCount = 0;
+
+    const interactionType = "GESTURE";
+
+    // Leaflet map settings for GESTURE condition
+    const map = L.map('map', {
+      zoomControl: false,      // no +/- buttons
+      scrollWheelZoom: false,  // scroll zoom disabled
+      touchZoom: true,         // pinch zoom enabled
+      dragging: true
+    }).setView([50.83, 12.92], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
+      .addTo(map);
+
+    // Count interactions
+    map.on("zoom", () => zoomCount++);
+    map.on("move", () => panCount++);
+
+    // Start task
+    document.getElementById("startBtn").addEventListener("click", () => {
+      startTime = new Date();
+      zoomCount = 0;
+      panCount = 0;
+      document.getElementById("status").innerText =
+        "Task started. Please complete the tasks.";
+    });
+
+    // Finish task: download CSV + redirect
+    document.getElementById("finishBtn").addEventListener("click", () => {
+      if (!startTime) {
+        alert("Please click Start Task first.");
+        return;
+      }
+
+      const endTime = new Date();
+      const timeTaken = (endTime - startTime) / 1000;
+
+      const participantId =
+        document.getElementById("pid").value.trim() || "NA";
+
+      const csv =
+        "participant,interaction,time_seconds,zooms,pans\n" +
+        `${participantId},${interactionType},${timeTaken},${zoomCount},${panCount}\n`;
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `usability_${participantId}_${interactionType}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      window.location.href = SURVEY_URL;
+    });
+  </script>
 
 </body>
 </html>
