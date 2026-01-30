@@ -1,15 +1,5 @@
-<h3>Interaction Type: Gesture-based Zoom & Pan</h3>
-
-<p><b>Task 1:</b> Locate Chemnitz Hauptbahnhof.</p>
-<p><b>Task 2:</b> Zoom to the city center.</p>
-<p><b>Task 3:</b> Identify two nearby points of interest.</p>
-
-<p>
-  When you finish all tasks, click <b>Finish Task</b> and complete the questionnaire.
-</p>
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <title>Gesture Zoom Prototype</title>
   <meta charset="utf-8" />
@@ -19,118 +9,132 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
   <style>
-    #map { height: 100vh; }
+    body {
+      font-family: "Times New Roman", serif;
+      margin: 20px;
+      line-height: 1.4;
+    }
+
+    #map {
+      height: calc(100vh - 320px);
+      border: 1px solid #ccc;
+      margin-top: 15px;
+      touch-action: none; /* helps consistent gesture handling */
+    }
+
+    .controls { margin-top: 10px; }
+
+    input {
+      padding: 6px;
+      font-size: 16px;
+      width: 220px;
+    }
+
+    button {
+      padding: 6px 14px;
+      font-size: 16px;
+      margin-right: 8px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+
+    #status {
+      margin-top: 10px;
+      font-weight: bold;
+    }
   </style>
 </head>
+
 <body>
-<h3>Map Navigation Task</h3>
 
-<label>Participant ID:</label>
-<input type="text" id="pid" placeholder="P01">
+  <h2>Interaction Type: Gesture-based Zoom &amp; Pan</h2>
 
-<br><br>
+  <p><b>Task 1:</b> Locate Chemnitz Hauptbahnhof.</p>
+  <p><b>Task 2:</b> Zoom to the city center.</p>
+  <p><b>Task 3:</b> Identify two nearby points of interest.</p>
 
-<button onclick="startTask()">Start Task</button>
-<button onclick="finishTask()">Finish Task</button>
+  <p>
+    When you finish all tasks, click <b>Finish Task</b> and complete the questionnaire.
+  </p>
 
-<script>
-function finishTask() {
-  window.open("https://forms.gle/YOUR_UMUX_LINK", "_blank");
-}
-</script>
+  <h3>Map Navigation Task</h3>
 
-<p id="status"></p>
+  <label><b>Participant ID:</b></label>
+  <input type="text" id="pid" placeholder="P01" />
 
-<hr>
+  <div class="controls">
+    <button id="startBtn" type="button">Start Task</button>
+    <button id="finishBtn" type="button">Finish Task</button>
+  </div>
 
-<div id="map"></div>
-<button onclick="goToUMUX()">Finish Task & Go to UMUX</button>
+  <div id="status"></div>
 
-<script>
-    let startTime;
-let endTime;
-let zoomCount = 0;
-let panCount = 0;
+  <div id="map"></div>
 
-const interactionType = "GESTURE";
+  <script>
+    // ✅ LimeSurvey UMUX link
+    const SURVEY_URL =
+      "https://bildungsportal.sachsen.de/umfragen/limesurvey/index.php/815877?lang=en";
 
-// change to "SCROLL" or "GESTURE" in other versions
+    // Logging variables
+    let startTime = null;
+    let zoomCount = 0;
+    let panCount = 0;
 
-  var map = L.map('map', {
-    zoomControl: false,
-    scrollWheelZoom: false,
-    touchZoom: true,
-    dragging: true
-  }).setView([50.83, 12.92], 13);
-  function startTask() {
-  startTime = new Date();
-  zoomCount = 0;
-  panCount = 0;
+    const interactionType = "GESTURE";
 
-  document.getElementById("status").innerText =
-    "Task started. Please complete the task.";
-}
+    // Leaflet map settings for GESTURE condition
+    const map = L.map('map', {
+      zoomControl: false,      // no +/- buttons
+      scrollWheelZoom: false,  // scroll zoom disabled
+      touchZoom: true,         // pinch zoom enabled
+      dragging: true
+    }).setView([50.83, 12.92], 13);
 
-function endTask() {
-  endTime = new Date();
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
+      .addTo(map);
 
-  const timeTaken = (endTime - startTime) / 1000;
-  const participantId = document.getElementById("pid").value;
+    // Count interactions
+    map.on("zoom", () => zoomCount++);
+    map.on("move", () => panCount++);
 
-  const result = {
-    participant: participantId,
-    interaction: interactionType,
-    time_seconds: timeTaken,
-    zooms: zoomCount,
-    pans: panCount
-  };
+    // Start task
+    document.getElementById("startBtn").addEventListener("click", () => {
+      startTime = new Date();
+      zoomCount = 0;
+      panCount = 0;
+      document.getElementById("status").innerText =
+        "Task started. Please complete the tasks.";
+    });
 
-  console.log(result);
-  downloadCSV(result);
+    // Finish task: download CSV + redirect
+    document.getElementById("finishBtn").addEventListener("click", () => {
+      if (!startTime) {
+        alert("Please click Start Task first.");
+        return;
+      }
 
-  document.getElementById("status").innerText =
-    "Task completed. Data saved.";
-}
-map.on("zoom", function () {
-  zoomCount++;
-});
+      const endTime = new Date();
+      const timeTaken = (endTime - startTime) / 1000;
 
-map.on("move", function () {
-  panCount++;
-});
+      const participantId =
+        document.getElementById("pid").value.trim() || "NA";
 
+      const csv =
+        "participant,interaction,time_seconds,zooms,pans\n" +
+        `${participantId},${interactionType},${timeTaken},${zoomCount},${panCount}\n`;
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
-    .addTo(map);
-    
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `usability_${participantId}_${interactionType}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
 
-    function downloadCSV(data) {
-  const csv = 
-    "participant,interaction,time_seconds,zooms,pans\n" +
-    `${data.participant},${data.interaction},${data.time_seconds},${data.zooms},${data.pans}`;
-
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "usability_results.csv";
-  a.click();
-}
-
-</script>
-<script>
-function goToUMUX() {
-  alert(
-    "You have completed the tasks.\n" +
-    "Please complete the UMUX questionnaire based on this interaction."
-  );
-
-  window.open(
-    "https://bildungsportal.sachsen.de/umfragen/limesurvey/index.php/815877?lang=en"
-  );
-}
-</script>
+      window.location.href = SURVEY_URL;
+    });
+  </script>
 
 </body>
 </html>
