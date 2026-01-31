@@ -1,143 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Gesture Zoom Prototype</title>
+  <title>Map Interaction Usability Study</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
   <style>
     body {
       font-family: "Times New Roman", serif;
-      margin: 20px;
-      line-height: 1.4;
+      margin: 40px;
+      line-height: 1.6;
+      max-width: 900px;
     }
 
-    #map {
-      height: calc(100vh - 320px);
-      border: 1px solid #ccc;
-      margin-top: 15px;
-      touch-action: none; /* helps consistent gesture handling */
+    h1 {
+      margin-bottom: 10px;
     }
 
-    .controls { margin-top: 10px; }
+    .section {
+      margin-top: 25px;
+    }
 
     input {
       padding: 6px;
       font-size: 16px;
-      width: 220px;
+      width: 200px;
     }
 
     button {
-      padding: 6px 14px;
+      padding: 8px 18px;
       font-size: 16px;
-      margin-right: 8px;
+      margin-right: 10px;
       margin-top: 10px;
       cursor: pointer;
     }
 
-    #status {
-      margin-top: 10px;
-      font-weight: bold;
+    .note {
+      background: #f5f5f5;
+      padding: 12px;
+      border-left: 4px solid #999;
+      margin-top: 15px;
     }
   </style>
 </head>
 
 <body>
 
-  <h2>Interaction Type: Gesture-based Zoom &amp; Pan</h2>
-
-  <p><b>Task 1:</b> Locate Chemnitz Hauptbahnhof.</p>
-  <p><b>Task 2:</b> Zoom to the city center.</p>
-  <p><b>Task 3:</b> Identify two nearby points of interest.</p>
+  <h1>Map Interaction Usability Study</h1>
 
   <p>
-    When you finish all tasks, click <b>Finish Task</b> and complete the questionnaire.
+    Thank you for participating in this usability study.  
+    The goal of this study is to evaluate different map zoom and pan interaction techniques.
   </p>
 
-  <h3>Map Navigation Task</h3>
-
-  <label><b>Participant ID:</b></label>
-  <input type="text" id="pid" placeholder="P01" />
-
-  <div class="controls">
-    <button id="startBtn" type="button">Start Task</button>
-    <button id="finishBtn" type="button">Finish Task</button>
+  <div class="section">
+    <h3>Instructions</h3>
+    <ul>
+      <li>You will perform the same map navigation tasks using <b>three interaction methods</b>.</li>
+      <li>Please complete the tasks as accurately and efficiently as possible.</li>
+      <li>After each interaction, you will be asked to complete a short usability questionnaire.</li>
+      <li>There are no right or wrong answers — we are interested in your experience.</li>
+    </ul>
   </div>
 
-  <div id="status"></div>
+  <div class="section">
+    <h3>Participant Information</h3>
+    <label><b>Participant ID:</b></label><br>
+    <input type="text" id="pid" placeholder="P01" />
+  </div>
 
-  <div id="map"></div>
+  <div class="section">
+    <h3>Interaction Order</h3>
+
+    <p>
+      Please complete the interaction methods in the following order:
+    </p>
+
+    <ol>
+      <li>Button-based Zoom & Pan</li>
+      <li>Scroll-based Zoom & Pan</li>
+      <li>Gesture-based Zoom & Pan</li>
+    </ol>
+
+    <div class="note">
+      <b>Important:</b> After finishing each interaction, you will be redirected back to this page automatically.
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Start the Study</h3>
+
+    <button onclick="startInteraction('button.html')">
+      Start Button-based Interaction
+    </button>
+
+    <button onclick="startInteraction('scroll.html')">
+      Start Scroll-based Interaction
+    </button>
+
+    <button onclick="startInteraction('gesture.html')">
+      Start Gesture-based Interaction
+    </button>
+  </div>
 
   <script>
-    // ✅ LimeSurvey UMUX link
-    const SURVEY_URL =
-      "https://bildungsportal.sachsen.de/umfragen/limesurvey/index.php/815877?lang=en";
+    function startInteraction(page) {
+      const pid = document.getElementById("pid").value.trim();
 
-    // Logging variables
-    let startTime = null;
-    let zoomCount = 0;
-    let panCount = 0;
-
-    const interactionType = "GESTURE";
-
-    // Leaflet map settings for GESTURE condition
-    const map = L.map('map', {
-      zoomControl: false,      // no +/- buttons
-      scrollWheelZoom: false,  // scroll zoom disabled
-      touchZoom: true,         // pinch zoom enabled
-      dragging: true
-    }).setView([50.83, 12.92], 13);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
-      .addTo(map);
-
-    // Count interactions
-    map.on("zoom", () => zoomCount++);
-    map.on("move", () => panCount++);
-
-    // Start task
-    document.getElementById("startBtn").addEventListener("click", () => {
-      startTime = new Date();
-      zoomCount = 0;
-      panCount = 0;
-      document.getElementById("status").innerText =
-        "Task started. Please complete the tasks.";
-    });
-
-    // Finish task: download CSV + redirect
-    document.getElementById("finishBtn").addEventListener("click", () => {
-      if (!startTime) {
-        alert("Please click Start Task first.");
+      if (!pid) {
+        alert("Please enter your Participant ID before starting.");
         return;
       }
 
-      const endTime = new Date();
-      const timeTaken = (endTime - startTime) / 1000;
+      // Store Participant ID so other pages can reuse it
+      sessionStorage.setItem("participantId", pid);
 
-      const participantId =
-        document.getElementById("pid").value.trim() || "NA";
-
-      const csv =
-        "participant,interaction,time_seconds,zooms,pans\n" +
-        `${participantId},${interactionType},${timeTaken},${zoomCount},${panCount}\n`;
-
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `usability_${participantId}_${interactionType}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-
-      window.location.href = SURVEY_URL;
-    });
+      window.location.href = page;
+    }
   </script>
 
 </body>
 </html>
+
 
 
 
